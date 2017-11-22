@@ -2,7 +2,6 @@
 // LED definitions
 #define LED_PIN     5
 #define NUM_LEDS    112
-#define BRIGHTNESS  80
 #define LED_TYPE    WS2812
 #define COLOR_ORDER GRB
 #define UPDATES_PER_SECOND 60
@@ -19,6 +18,10 @@ int btnCounter = 0; // a counter to determine states
 int nextState = 0;
 int prevState = 0;
 int lastBtnState = 0;     // previous state of the button
+// brightness by potentiometer
+int BRIGHTNESS = 80;
+#define MAX_BRIGHT 100
+#define MIN_BRIGHT 15
 
 // LED pallette setup
 CRGBPalette16 currentPalette;
@@ -35,12 +38,12 @@ void setup() {
 
   // set up FASTLED
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-  FastLED.setBrightness(BRIGHTNESS);
+  
 
   // General setup
   pinMode(NEXT_BTN, INPUT);
   pinMode(PREV_BTN, INPUT);
-
+  FastLED.setBrightness(BRIGHTNESS);
   currentPalette = RainbowColors_p;
   currentBlending = LINEARBLEND;
 }
@@ -48,8 +51,13 @@ void setup() {
 
 void loop()
 {
+  // set brightness by potentiometer
+  int brightVal = analogRead(A0)/10;
+  if (brightVal < MIN_BRIGHT) { brightVal = MIN_BRIGHT; }
+  else if (brightVal > MAX_BRIGHT) { brightVal = MAX_BRIGHT; }
+  FastLED.setBrightness(brightVal);
+  Serial.println(brightVal);
   random16_add_entropy(random());
-
   bool isFire = ChangePaletteOnButtonPress();
   if (!isFire) {
       static uint8_t startIndex = 0;
@@ -91,7 +99,6 @@ bool ChangePaletteOnButtonPress()
     }
     delay(500);
   }
-  Serial.println(btnCounter);
   bool isFire = false;
   switch(btnCounter){
     case 0:
