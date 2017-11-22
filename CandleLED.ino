@@ -56,7 +56,6 @@ void loop()
       startIndex = startIndex + 1; /* motion speed */
       FillLEDsFromPaletteColors(startIndex);
   }
-  //ChangePalettePeriodically();
   FastLED.show();
   FastLED.delay(1000 / UPDATES_PER_SECOND);
 }
@@ -64,73 +63,9 @@ void loop()
 void FillLEDsFromPaletteColors( uint8_t colorIndex)
 {
   uint8_t brightness = 255;
-
   for ( int i = 0; i < NUM_LEDS; i++) {
     leds[i] = ColorFromPalette( currentPalette, colorIndex, brightness, currentBlending);
     colorIndex += 3;
-  }
-}
-
-
-// There are several different palettes of colors demonstrated here.
-//
-// FastLED provides several 'preset' palettes: RainbowColors_p, RainbowStripeColors_p,
-// OceanColors_p, CloudColors_p, LavaColors_p, ForestColors_p, and PartyColors_p.
-//
-// Additionally, you can manually define your own color palettes, or you can write
-// code that creates color palettes on the fly.  All are shown here.
-
-void ChangePalettePeriodically()
-{
-  uint8_t secondHand = (millis() / 1000) % 60;
-  static uint8_t lastSecond = 99;
-
-  if ( lastSecond != secondHand) {
-    lastSecond = secondHand;
-    if ( secondHand ==  0)  {
-      currentPalette = RainbowColors_p;
-      currentBlending = LINEARBLEND;
-    }
-    if ( secondHand == 10)  {
-      currentPalette = RainbowStripeColors_p;
-      currentBlending = NOBLEND;
-    }
-    if ( secondHand == 15)  {
-      currentPalette = RainbowStripeColors_p;
-      currentBlending = LINEARBLEND;
-    }
-    if ( secondHand == 20)  {
-      SetupPurpleAndGreenPalette();
-      currentBlending = LINEARBLEND;
-    }
-    if ( secondHand == 25)  {
-      SetupTotallyRandomPalette();
-      currentBlending = LINEARBLEND;
-    }
-    if ( secondHand == 30)  {
-      SetupBlackAndWhiteStripedPalette();
-      currentBlending = NOBLEND;
-    }
-    if ( secondHand == 35)  {
-      SetupBlackAndWhiteStripedPalette();
-      currentBlending = LINEARBLEND;
-    }
-    if ( secondHand == 40)  {
-      currentPalette = CloudColors_p;
-      currentBlending = LINEARBLEND;
-    }
-    if ( secondHand == 45)  {
-      currentPalette = PartyColors_p;
-      currentBlending = LINEARBLEND;
-    }
-    if ( secondHand == 50)  {
-      currentPalette = CozyPalette_p;
-      currentBlending = NOBLEND;
-    }
-    if ( secondHand == 55)  {
-      currentPalette = CozyPalette_p;
-      currentBlending = LINEARBLEND;
-    }
   }
 }
 
