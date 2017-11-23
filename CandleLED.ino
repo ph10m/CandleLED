@@ -10,7 +10,6 @@ CRGB leds[NUM_LEDS];
 
 // general definitions
 #define NEXT_BTN 2
-#define PREV_BTN 3
 #define AMOUNT_OF_PALETTES 8
 
 // changing variables
@@ -19,8 +18,9 @@ int nextState = 0;
 int prevState = 0;
 int lastBtnState = 0;     // previous state of the button
 // brightness by potentiometer
-int BRIGHTNESS = 80;
-#define MAX_BRIGHT 100
+int BRIGHTNESS;
+int prevBrightVal;
+#define MAX_BRIGHT 85
 #define MIN_BRIGHT 15
 
 // LED pallette setup
@@ -30,6 +30,16 @@ TBlendType    currentBlending;
 extern CRGBPalette16 CozyPalette;
 extern const TProgmemPalette16 CozyPalette_p PROGMEM;
 
+int readBrightness(){
+  // set brightness by potentiometer
+  int brightVal = analogRead(A0)/10;
+  if (abs(brightVal-prevBrightVal)>40 || brightVal < MIN_BRIGHT) {
+    brightVal = MIN_BRIGHT;
+  }
+  if (brightVal > MAX_BRIGHT) { brightVal = MAX_BRIGHT; }
+  prevBrightVal = brightVal;
+  return brightVal;
+}
 
 void setup() {
   delay(1000); // power-up safety delay
@@ -39,27 +49,20 @@ void setup() {
   // set up FASTLED
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   
-
   // General setup
   pinMode(NEXT_BTN, INPUT);
-  pinMode(PREV_BTN, INPUT);
-  FastLED.setBrightness(BRIGHTNESS);
+  // Calibrate brightness
+  FastLED.setBrightness(readBrightness());
   currentPalette = RainbowColors_p;
   currentBlending = LINEARBLEND;
 }
 
-
 void loop()
 {
-  // set brightness by potentiometer
-  int brightVal = analogRead(A0)/10;
-  if (brightVal < MIN_BRIGHT) { brightVal = MIN_BRIGHT; }
-  else if (brightVal > MAX_BRIGHT) { brightVal = MAX_BRIGHT; }
-  FastLED.setBrightness(brightVal);
-  Serial.println(brightVal);
+  int brightVal = readBrightness();
+  FastLED.setBrightness(readBrightness());
   random16_add_entropy(random());
-  bool isFire = ChangePaletteOnButtonPress();
-  if (!isFire) {
+  if (ChangePaletteOnButtonPress()) {
       static uint8_t startIndex = 0;
       startIndex = startIndex + 1; /* motion speed */
       FillLEDsFromPaletteColors(startIndex);
@@ -80,7 +83,7 @@ void FillLEDsFromPaletteColors( uint8_t colorIndex)
 bool ChangePaletteOnButtonPress()
 {
   nextState = digitalRead(NEXT_BTN);
-  prevState = digitalRead(PREV_BTN);
+  Serial.println(nextState);
   if (nextState == HIGH){
     if (btnCounter >= AMOUNT_OF_PALETTES){
       btnCounter = 0;
@@ -90,19 +93,12 @@ bool ChangePaletteOnButtonPress()
     }
     delay(500);
   }
-  if (prevState == HIGH){
-    if (btnCounter <= 0){
-      btnCounter = AMOUNT_OF_PALETTES;
-    }
-    else {
-      btnCounter -= 1;
-    }
-    delay(500);
-  }
-  bool isFire = false;
+  Serial.println(btnCounter);
+  bool fillLeds = true;
   switch(btnCounter){
     case 0:
-      currentPalette = RainbowColors_p;
+      Fire2012WithPalette();
+      fillLeds = false;
       break;
     case 1:
       currentPalette = RainbowStripeColors_p;
@@ -126,14 +122,13 @@ bool ChangePaletteOnButtonPress()
       SetupTotallyRandomPalette();
       break;
     case 8:
-      Fire2012WithPalette();
-      isFire = true;
+      currentPalette = RainbowColors_p;
       break;
     default:
       currentPalette = RainbowColors_p;
       break;
   }
-  return isFire;
+  return fillLeds;
 }
 
 
@@ -142,6 +137,7 @@ void SetupTotallyRandomPalette()
 {
   for ( int i = 0; i < 16; i++) {
     currentPalette[i] = CHSV( random8(), 255, random8());
+    delay(10);
   }
 }
 
@@ -228,15 +224,15 @@ const TProgmemPalette16 CozyPalette_p PROGMEM =
 // COOLING: How much does the air cool as it rises?
 // Less cooling = taller flames.  More cooling = shorter flames.
 // Default 55, suggested range 20-100 
-#define COOLING  80
+#define COOLING  50
 // SPARKING: What chance (out of 255) is there that a new spark will be lit?
 // Higher chance = more roaring fire.  Lower chance = more flickery fire.
 // Default 120, suggested range 50-200.
-#define SPARKING 150
+#define SPARKING 80
 void Fire2012WithPalette()
 {
 // Array of temperature readings at each simulation cell
-  currentPalette = CRGBPalette16(CRGB::Red, CRGB(255,90,0), CRGB(255,150,10));
+  currentPalette = CRGBPalette16(CRGB(255,20,0), CRGB(255,90,0), CRGB(255,150,10));
   static byte heat[NUM_LEDS];
 
   // Step 1.  Cool down every cell a little
@@ -260,7 +256,8 @@ void Fire2012WithPalette()
       // Scale the heat value from 0-255 down to 0-240
       // for best results with color palettes.
       byte colorindex = scale8( heat[j], 240);
-      CRGB color = ColorFromPalette(currentPalette, colorindex);
+      uint8_t brightness = random8(180,255);
+      CRGB color = ColorFromPalette(currentPalette, colorindex, brightness, NOBLEND);
       int pixelnumber;
       pixelnumber = (NUM_LEDS-1)-j;
       leds[pixelnumber] = color;
