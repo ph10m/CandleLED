@@ -9,7 +9,7 @@ CRGB leds[NUM_LEDS];
 // END LED definitions
 
 // general definitions
-#define NEXT_BTN 2
+#define NEXT_BTN 8
 #define AMOUNT_OF_PALETTES 8
 
 // changing variables
@@ -43,18 +43,21 @@ int readBrightness(){
 
 void setup() {
   delay(1000); // power-up safety delay
-  Serial.begin(9600);
-  Serial.println("Setup done");
-
   // set up FASTLED
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-  
   // General setup
   pinMode(NEXT_BTN, INPUT);
   // Calibrate brightness
   FastLED.setBrightness(readBrightness());
   currentPalette = RainbowColors_p;
   currentBlending = LINEARBLEND;
+  // don't continue unless button is pressed
+  while(true){
+    if (digitalRead(NEXT_BTN) == HIGH){
+      break;
+    }
+  }
+  delay(350);
 }
 
 void loop()
@@ -83,7 +86,6 @@ void FillLEDsFromPaletteColors( uint8_t colorIndex)
 bool ChangePaletteOnButtonPress()
 {
   nextState = digitalRead(NEXT_BTN);
-  Serial.println(nextState);
   if (nextState == HIGH){
     if (btnCounter >= AMOUNT_OF_PALETTES){
       btnCounter = 0;
@@ -93,7 +95,6 @@ bool ChangePaletteOnButtonPress()
     }
     delay(500);
   }
-  Serial.println(btnCounter);
   bool fillLeds = true;
   switch(btnCounter){
     case 0:
